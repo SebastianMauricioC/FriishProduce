@@ -199,6 +199,8 @@
 			"help":								"&Help",
 
 			"new_project":						"&New...",
+			"start_project":					"Start a project",
+			"welcome_subtitle":				"Create a Wii or vWii channel from a game, ROM or supported file.",
 			"open_project":						"&Open project...",
 			"open_recent":						"Open &recent",
 			"clear_recent":						"&Clear this list",

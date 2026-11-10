@@ -109,17 +109,7 @@ namespace FriishProduce
             {
                 if (path.ToLower().StartsWith("http"))
                 {
-                    // Prevent certificate error (LibRetro thumbnails website certificate is currently expired and will throw an exception by default)
-                    // ****************
-                    ServicePointManager.ServerCertificateValidationCallback = delegate
-                        (object sender,
-                        System.Security.Cryptography.X509Certificates.X509Certificate certificate,
-                        System.Security.Cryptography.X509Certificates.X509Chain chain,
-                        System.Net.Security.SslPolicyErrors sslPolicyErrors)
-                    { return true; };
-
-                    using (WebClient c = new())
-                    using (Stream s = c.OpenRead(path))
+                    using (MemoryStream s = new(Web.Get(path, 30)))
                     {
                         Source = new Bitmap(s);
                         SourcePath = path;
@@ -139,7 +129,7 @@ namespace FriishProduce
             catch (Exception ex)
             {
                 if (Program.DebugMode || !Program.GUI)
-                    throw ex;
+                    throw;
                 else
                 {
                     string message = ex.GetType() == typeof(WebException) ? ex.Message.TrimEnd('.') + "." : ex.Message;

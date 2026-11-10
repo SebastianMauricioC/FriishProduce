@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -15,6 +16,11 @@ namespace FriishProduce
         private readonly string[] files = null;
         private readonly SettingsForm settings = new();
         private Wait wait = new(false);
+        private readonly Button startProjectButton = new();
+        private readonly Button openProjectButton = new();
+        private readonly Label welcomeSubtitle = new();
+        private bool startProjectButtonHover;
+        private bool startProjectButtonPressed;
 
         #region //////////////////// Platforms ////////////////////
         private static readonly string[] platformsList = new string[]
@@ -139,6 +145,17 @@ namespace FriishProduce
             }
 
             toolbarGameScan.Image = (Theme.Colors.ToolStrip_Top.GetBrightness() + Theme.Colors.ToolStrip_Bottom.GetBrightness()) / 2 > 0.66 ? Properties.Resources.retroarch : Properties.Resources.retroarch_w;
+            startProjectButton.Text = Program.Lang.String("start_project", "mainform");
+            startProjectButton.BackColor = Theme.Colors.Headline;
+            startProjectButton.ForeColor = Color.White;
+            startProjectButton.FlatStyle = FlatStyle.Flat;
+            startProjectButton.FlatAppearance.BorderSize = 0;
+            openProjectButton.Text = Program.Lang.String("open_project", "mainform").Replace("&", "");
+            openProjectButton.BackColor = Theme.Colors.Form.BG;
+            openProjectButton.ForeColor = Theme.Colors.Text;
+            openProjectButton.FlatAppearance.BorderColor = Theme.Colors.Form.Border;
+            welcomeSubtitle.Text = Program.Lang.String("welcome_subtitle", "mainform");
+            welcomeSubtitle.ForeColor = Theme.Colors.Text;
 
             #endregion
 
@@ -237,6 +254,39 @@ namespace FriishProduce
         {
             InitializeComponent();
             this.files = files;
+
+            startProjectButton.Name = "startProjectButton";
+            startProjectButton.Text = "Start a project";
+            startProjectButton.Font = new Font("Segoe UI", 12f, FontStyle.Bold);
+            startProjectButton.Size = new Size(270, 56);
+            startProjectButton.Cursor = Cursors.Hand;
+            startProjectButton.FlatStyle = FlatStyle.Flat;
+            startProjectButton.FlatAppearance.BorderSize = 0;
+            startProjectButton.UseVisualStyleBackColor = false;
+            startProjectButton.TabStop = false;
+            startProjectButton.Paint += StartProjectButton_Paint;
+            startProjectButton.Resize += StartProjectButton_Resize;
+            startProjectButton.MouseEnter += (s, e) => { startProjectButtonHover = true; startProjectButton.Invalidate(); };
+            startProjectButton.MouseLeave += (s, e) => { startProjectButtonHover = false; startProjectButtonPressed = false; startProjectButton.Invalidate(); };
+            startProjectButton.MouseDown += (s, e) => { startProjectButtonPressed = true; startProjectButton.Invalidate(); };
+            startProjectButton.MouseUp += (s, e) => { startProjectButtonPressed = false; startProjectButton.Invalidate(); };
+            startProjectButton.Click += OpenNewProjectTypes;
+            mainPanel.Controls.Add(startProjectButton);
+
+            openProjectButton.Name = "openProjectButton";
+            openProjectButton.Font = new Font("Segoe UI", 9.5f);
+            openProjectButton.Size = new Size(160, 38);
+            openProjectButton.Cursor = Cursors.Hand;
+            openProjectButton.FlatStyle = FlatStyle.Flat;
+            openProjectButton.FlatAppearance.BorderSize = 1;
+            openProjectButton.Click += OpenProject_Click;
+            mainPanel.Controls.Add(openProjectButton);
+
+            welcomeSubtitle.Name = "welcomeSubtitle";
+            welcomeSubtitle.AutoSize = false;
+            welcomeSubtitle.TextAlign = ContentAlignment.MiddleCenter;
+            welcomeSubtitle.Font = new Font("Segoe UI", 9.5f);
+            mainPanel.Controls.Add(welcomeSubtitle);
         }
 
         private void MainForm_Loading(object sender, EventArgs e)
@@ -260,6 +310,10 @@ namespace FriishProduce
             // Set logo position (425, 163)
             // ********
             if (Logo.Location.X == 0 || Logo.Location.Y == 0) Logo.Location = new Point(mainPanel.Bounds.Width / 2 - (Logo.Width / 2), mainPanel.Bounds.Height / 2 - (Logo.Height / 2) - mainPanel.Location.Y);
+            startProjectButton.Location = new Point(mainPanel.Bounds.Width / 2 - startProjectButton.Width / 2, Logo.Bottom + 24);
+            welcomeSubtitle.Location = new Point(32, startProjectButton.Bottom + 10);
+            welcomeSubtitle.Size = new Size(mainPanel.Bounds.Width - 64, 34);
+            openProjectButton.Location = new Point(mainPanel.Bounds.Width / 2 - openProjectButton.Width / 2, welcomeSubtitle.Bottom + 8);
             #endregion
 
             // Open project(s) if defined as argument(s)
@@ -289,7 +343,52 @@ namespace FriishProduce
 
         private void OpenNewProjectTypes(object sender, EventArgs e)
         {
+            if (sender == startProjectButton)
+            {
+                new_project_menu.Show(startProjectButton, new Point(startProjectButton.Width, startProjectButton.Height), LeftRightAlignment.Right);
+                return;
+            }
+
             new_project_menu.Show(toolStrip, new(Cursor.Position.X - Left - (Width - ClientSize.Width) + 8, Cursor.Position.Y - Top - (Height - ClientSize.Height) + 8), LeftRightAlignment.Right);
+        }
+
+        private void StartProjectButton_Resize(object sender, EventArgs e)
+        {
+            using (GraphicsPath path = RoundedRectangle(startProjectButton.ClientRectangle, 12))
+                startProjectButton.Region = new System.Drawing.Region(path);
+        }
+
+        private void StartProjectButton_Paint(object sender, PaintEventArgs e)
+        {
+            Rectangle bounds = startProjectButton.ClientRectangle;
+            bounds.Width--;
+            bounds.Height--;
+
+            Color start = Theme.Colors.Headline;
+            Color end = ControlPaint.Dark(start, startProjectButtonPressed ? 0.18f : startProjectButtonHover ? 0.08f : 0.02f);
+
+            using (GraphicsPath path = RoundedRectangle(bounds, 12))
+            using (LinearGradientBrush brush = new(bounds, start, end, LinearGradientMode.Vertical))
+            using (Pen border = new(ControlPaint.Dark(start, 0.2f)))
+            {
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+                e.Graphics.FillPath(brush, path);
+                e.Graphics.DrawPath(border, path);
+            }
+
+            TextRenderer.DrawText(e.Graphics, startProjectButton.Text, startProjectButton.Font, bounds, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
+        }
+
+        private static GraphicsPath RoundedRectangle(Rectangle bounds, int radius)
+        {
+            int diameter = radius * 2;
+            GraphicsPath path = new();
+            path.AddArc(bounds.X, bounds.Y, diameter, diameter, 180, 90);
+            path.AddArc(bounds.Right - diameter, bounds.Y, diameter, diameter, 270, 90);
+            path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
+            path.AddArc(bounds.X, bounds.Bottom - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
         public int Wait_CheckTries()
@@ -410,6 +509,8 @@ namespace FriishProduce
                 toolbarGameScan.Visible = toolStripSeparator3.Visible = game_scan.Visible = true;
 
                 tabControl.Visible = false;
+                mainPanel.Visible = true;
+                startProjectButton.Visible = openProjectButton.Visible = welcomeSubtitle.Visible = true;
             }
 
             else
@@ -421,6 +522,8 @@ namespace FriishProduce
                 import_game_file.Text = Program.Lang.Format((import_game_file.Tag.ToString(), Name), (tabControl.SelectedForm as ProjectForm).FileTypeName);
 
                 toolbarGameScan.Visible = toolStripSeparator3.Visible = game_scan.Visible = (tabControl.SelectedForm as ProjectForm).ToolbarButtons[0];
+                mainPanel.Visible = false;
+                startProjectButton.Visible = openProjectButton.Visible = welcomeSubtitle.Visible = false;
             }
 
             import_game_file.Enabled = close_all.Enabled = close_project.Enabled = hasTabs;
@@ -1272,7 +1375,7 @@ namespace FriishProduce
             catch (Exception ex)
             {
                 if (Program.DebugMode)
-                    throw ex;
+                    throw;
                 else
                     MessageBox.Error(ex.Message);
             }

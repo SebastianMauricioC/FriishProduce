@@ -40,7 +40,7 @@ namespace FriishProduce
         {
             get
             {
-                string[] value = ChannelTitles;
+                string[] value = ChannelTitles?.ToArray();
 
                 int maxLength = 20;
                 for (int i = 0; i < value.Length; i++)
@@ -384,9 +384,9 @@ namespace FriishProduce
             SaveDataTitle = null;
             Out = null;
 
-            ROM.Dispose();
-            WAD.Dispose();
-            Img.Dispose();
+            ROM?.Dispose();
+            WAD?.Dispose();
+            Img?.Dispose();
 
             EmuVersion = 0;
             Platform = 0;

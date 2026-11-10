@@ -193,6 +193,8 @@
 			"help":								"A&yuda",
 
 			"new_project":						"&Nuevo...",
+			"start_project":					"Empezar un proyecto",
+			"welcome_subtitle":				"Crea un canal de Wii o vWii a partir de un juego, ROM o archivo compatible.",
 			"open_project":						"&Abrir proyecto...",
 			"open_recent":						"Abrir &recientes",
 			"clear_recent":						"&Borrar esta lista",

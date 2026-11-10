@@ -539,7 +539,7 @@ namespace FriishProduce
                 catch (Exception ex)
                 {
                     if (ex.Message != error)
-                        throw ex;
+                        throw;
                 }
             }
 

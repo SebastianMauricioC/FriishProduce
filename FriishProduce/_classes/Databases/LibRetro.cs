@@ -5,6 +5,7 @@ using System.IO;
 using System.IO.Hashing;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace FriishProduce.Databases
 {
@@ -213,9 +214,9 @@ namespace FriishProduce.Databases
                             serial = line.Substring(line.IndexOf("serial ") + 7);
                         }
 
-                        if (line.Contains("year "))
+                        if (line.Contains("releaseyear "))
                         {
-                            releaseyear = line.Replace("\"", null).Substring(line.IndexOf("year ") + 5, 4);
+                            releaseyear = line.Replace("\"", null).Substring(line.IndexOf("releaseyear ") + 12).Trim();
 
                             if (!int.TryParse(releaseyear, out int _))
                                 releaseyear = null;
@@ -292,30 +293,43 @@ namespace FriishProduce.Databases
                     fileStream.Dispose();
                 }
 
-                var rows = dt.Select($"crc = '{crc32}'");
+                DataRow[] rows = dt.Select($"crc = '{crc32}'");
+                if (rows.Length == 0)
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+                    string normalizedFileName = NormalizeName(fileName);
+
+                    foreach (DataRow row in dt.Rows)
+                    {
+                        if (NormalizeName(row["name"]?.ToString()) == normalizedFileName)
+                        {
+                            rows = new[] { row };
+                            Logger.Log($"LibRetro CRC {crc32} did not match; using ROM filename fallback.");
+                            break;
+                        }
+                    }
+                }
+
                 if (rows?.Length > 0)
                 {
                     try
                     {
-                        using (WebClient c = new WebClient())
-                        using (Stream s = c.OpenRead(rows[0][5]?.ToString()))
-                        {
-                            // Do something
-                        }
+                        Web.Get(rows[0][5]?.ToString(), 30);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Logger.Log($"Primary LibRetro image unavailable: {ex.Message}");
                         rows[0][5] = db_img(rows[0][1]?.ToString(), 1);
 
                         try
                         {
-                            using (WebClient c = new WebClient())
-                            using (Stream s = c.OpenRead(rows[0][5]?.ToString()))
-                            {
-                                // Do something
-                            }
+                            Web.Get(rows[0][5]?.ToString(), 30);
                         }
-                        catch { rows[0][5] = null; }
+                        catch (Exception fallbackEx)
+                        {
+                            Logger.Log($"Fallback LibRetro image unavailable: {fallbackEx.Message}");
+                            rows[0][5] = null;
+                        }
                     }
 
                     (string name, string serial, string year, string players, string image) result = (rows[0][1]?.ToString(), rows[0][2]?.ToString(), rows[0][3]?.ToString(), rows[0][4]?.ToString(), rows[0][5]?.ToString());
@@ -328,6 +342,13 @@ namespace FriishProduce.Databases
             }
 
             return (null, null, null, null, null, false);
+        }
+
+        private static string NormalizeName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return null;
+
+            return Regex.Replace(value, @"\s+", " ").Trim().ToLowerInvariant();
         }
     }
 }

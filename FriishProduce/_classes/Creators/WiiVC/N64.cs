@@ -267,7 +267,7 @@ namespace FriishProduce.Injectors
             catch (Exception ex)
             {
                 // Dispose Contents[1]
-                throw ex;
+                throw;
             }
         }
 

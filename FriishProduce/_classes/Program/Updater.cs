@@ -143,7 +143,7 @@ namespace FriishProduce
                 ClearFiles(ex == null);
 
                 if (ex != null)
-                    throw ex;
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex).Throw();
                 else
                     Environment.Exit(0);
             }
@@ -163,7 +163,10 @@ namespace FriishProduce
                 if (!IsLatest)
                     new UpdaterForm(Latest, LatestVersion).ShowDialog();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Logger.Log($"Update check failed: {ex.Message}");
+            }
 
             return IsLatest;
         }

@@ -213,7 +213,7 @@ namespace FriishProduce
                         catch (Exception ex)
                         {
                             if (Program.DebugMode)
-                                throw ex;
+                                throw;
                             else
                                 MessageBox.Error(ex.Message);
                             return;
@@ -1727,7 +1727,13 @@ namespace FriishProduce
                 // Show message if partially failed to retrieve data
                 if (retrieved && !gameData.IsComplete && !imageOnly)
                     MessageBox.Show(Program.Lang.Msg(4));
-                else if (!retrieved) SystemSounds.Beep.Play();
+                else if (!retrieved)
+                {
+                    SystemSounds.Beep.Play();
+                    Logger.Log($"No LibRetro metadata or title image found for {Path.GetFileName(rom.FilePath)}.");
+                    if (imageOnly)
+                        MessageBox.Show("No se encontró una imagen para esta ROM. Comprueba que el nombre y la revisión coincidan con la base de datos de LibRetro.", "FriishProduce", MessageBox.Buttons.Ok, MessageBox.Icons.Warning);
+                }
             }
 
             catch (Exception ex)
@@ -1735,7 +1741,7 @@ namespace FriishProduce
                 Program.MainForm.Wait(false, false, false);
 
                 if (Program.DebugMode)
-                    throw ex;
+                    throw;
                 else
                     MessageBox.Error(ex.Message);
                 return;
@@ -1870,7 +1876,7 @@ namespace FriishProduce
                         else
                         {
                             Logger.Log("WAD is invalid or failed to load more than once. Process halted.");
-                            throw ex;
+                            throw;
                         }
                     }
 
@@ -1886,7 +1892,7 @@ namespace FriishProduce
                         else
                         {
                             Logger.Log("WAD is invalid or failed to load more than once. Process halted.");
-                            throw ex;
+                            throw;
                         }
                     }
 
@@ -1896,7 +1902,7 @@ namespace FriishProduce
                         Logger.Log($"Message: {ex.Message}");
                         if (ex.InnerException != null) Logger.Log($"Inner Exception: {ex.InnerException.Message}");
                         Logger.Log($"Stack Trace:\n{ex.StackTrace}");
-                        throw ex;
+                        throw;
                     }
                 }
                 backgroundWorker.ReportProgress(m.Progress);

@@ -184,6 +184,8 @@
 			"help":								"&Aide",
 
 			"new_project":						"&Nouveau ...",
+			"start_project":					"Démarrer un projet",
+			"welcome_subtitle":				"Créez une chaîne Wii ou vWii à partir d'un jeu, d'une ROM ou d'un fichier compatible.",
 			"open_project":						"&Ouvrir un projet ...",
 			"open_recent":						"Projets &récents",
 			"clear_recent":						"&Effacer cette liste",

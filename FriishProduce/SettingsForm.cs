@@ -3,6 +3,7 @@ using System.Data;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace FriishProduce
@@ -323,7 +324,7 @@ namespace FriishProduce
         {
             System.Media.SystemSounds.Beep.Play();
 
-            /* var WADs = new List<(string ID, Platform c, string file)>()
+            var WADs = new List<(string ID, Platform c, string file)>()
             {
                 ("FCWP", Platform.NES, "nes"),
                 ("FCWJ", Platform.NES, "jp_fc"),
@@ -350,13 +351,21 @@ namespace FriishProduce
                 ("WNAP", Platform.Flash, "flash")
             };
 
-            foreach (var item in WADs)
+            try
             {
-                BannerHelper.ExportBanner(item.ID, item.c, item.file);
-                System.Media.SystemSounds.Beep.Play();
-            }
+                GetBanners.Enabled = false;
+                foreach (var item in WADs)
+                {
+                    BannerHelper.ExportBanner(item.ID, item.c, item.file);
+                    System.Media.SystemSounds.Beep.Play();
+                }
 
-            System.Media.SystemSounds.Asterisk.Play(); */
+                System.Media.SystemSounds.Asterisk.Play();
+            }
+            finally
+            {
+                GetBanners.Enabled = true;
+            }
 
             // BannerHelper.ModifyBanner("RPG MAKER",        FileDatas.WADBanners.n64,     "rpgm.app",     16,     FileDatas.WADBanners.rpgm_banner,       FileDatas.WADBanners.rpgm_icon);
             // BannerHelper.ModifyBanner("ＲＰＧツクール",    FileDatas.WADBanners.jp_n64,  "jp_rpgm.app",  16,     FileDatas.WADBanners.jp_rpgm_banner,    FileDatas.WADBanners.rpgm_icon);

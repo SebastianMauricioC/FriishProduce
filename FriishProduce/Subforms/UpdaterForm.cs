@@ -105,7 +105,7 @@ namespace FriishProduce
                 try { File.Delete(Paths.Update); } catch { }
 
                 if (Program.DebugMode)
-                    throw ex;
+                    throw;
                 else
                     MessageBox.Error(ex.GetType() == typeof(WebException) ? Web.Message(ex, url) : ex.Message);
 

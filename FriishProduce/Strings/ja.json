@@ -132,6 +132,8 @@
 			"tools": "ツール(&O)",
 			"help": "ヘルプ(&H)",
 			"new_project": "新しい...(&N)",
+			"start_project": "プロジェクトを開始",
+			"welcome_subtitle": "ゲーム、ROM、対応ファイルからWiiまたはvWiiチャンネルを作成します。",
 			"open_project": "プロジェクトを開く...(&O)",
 			"open_recent": "最近使ったプロジェクトを開く(&R)",
 			"clear_recent": "このリストをクリア(&C)",

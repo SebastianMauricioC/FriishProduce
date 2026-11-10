@@ -36,7 +36,7 @@ namespace FriishProduce
                 Text += Environment.NewLine;
             Text += $"[{DateTime.Now.Year}-{DateTime.Now.Month:D2}-{DateTime.Now.Day:D2} {DateTime.Now.Hour:D2}:{DateTime.Now.Minute:D2}:{DateTime.Now.Second:D2}] {msg}";
 
-            // File.WriteAllText(Paths.Log, Text);
+            try { File.WriteAllText(Paths.Log, Text); } catch { }
         }
     }
 
@@ -211,7 +211,6 @@ namespace FriishProduce
                 Logger.Log($"Sending initial Web request to URL: {URL}");
                 var request = (HttpWebRequest)WebRequest.Create(URL);
 
-                URL = request.Address.Authority;
                 request.Method = "HEAD";
                 request.KeepAlive = false;
                 request.Timeout = timeout * 1000;
@@ -222,25 +221,21 @@ namespace FriishProduce
 
                 bool result = false;
 
-                if (CheckDomain(URL, timeout))
+                if (CheckDomain(request.Address, timeout))
                 {
                     WebResponse response = null;
                     try { response = request.GetResponse(); }
                     catch (Exception ex)
                     {
-                        if (region < 0 && region > 2)
+                        if (region < 0)
                         {
                             region = 0;
                             goto Request;
                         }
-                        else { throw ex; }
+                        else { throw; }
                     }
 
-                    for (int i = 0; i < 2; i++)
-                    {
-                        char x = response.ResponseUri.ToString()[i];
-                    }
-
+                    response.Dispose();
                     result = true;
                 }
 
@@ -310,14 +305,11 @@ namespace FriishProduce
             return msg;
         }
 
-        private static bool CheckDomain(string URL, int timeout)
+        private static bool CheckDomain(Uri uri, int timeout)
         {
-            string host;
-            try { host = new Uri(URL).Host; } catch { host = URL; }
-
             using (var tcp = new TcpClient())
             {
-                var result = tcp.BeginConnect(host, 80, null, null);
+                var result = tcp.BeginConnect(uri.Host, uri.Port, null, null);
                 if (!result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(timeout)))
                 {
                     throw new WebException("The domain is not available.", WebExceptionStatus.ConnectFailure);
@@ -346,6 +338,8 @@ namespace FriishProduce
             // ****************
             using (WebClient x = new())
             {
+                x.Headers[HttpRequestHeader.UserAgent] = "FriishProduce";
+                x.Headers[HttpRequestHeader.Accept] = "*/*";
                 if (showProgress && Program.GUI)
                 {
                     Program.MainForm.Wait(true, true, true, 0, 5, deductTries ? 2 : 1);
@@ -938,7 +932,7 @@ namespace FriishProduce
 
             catch (Exception ex)
             {
-                throw ex;
+                throw;
             }
         }
 

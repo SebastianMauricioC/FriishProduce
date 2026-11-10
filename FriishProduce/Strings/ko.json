@@ -194,6 +194,8 @@
 			"help":								"도움말(&H)",
 
 			"new_project":						"새로운...(&N)",
+			"start_project":					"프로젝트 시작",
+			"welcome_subtitle":				"게임, ROM 또는 지원 파일에서 Wii 또는 vWii 채널을 만듭니다.",
 			"open_project":						"프로잭트 열기...(&O)",
 			"open_recent":						"최근 열기(&R)",
 			"clear_recent":						"이 목록 지우기(&C)",

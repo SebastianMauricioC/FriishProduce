@@ -116,6 +116,9 @@ namespace FriishProduce
             {
                 byte[] BRLYT = bannerBin.Data[bannerBin.GetNodeIndex("banner.brlyt")];
 
+                if (region == Region.Japan)
+                    UseInternationalLanguageGroup(BRLYT);
+
                 // Convert title to bytes
                 // ****************
                 byte[] Title = new byte[260];
@@ -127,10 +130,13 @@ namespace FriishProduce
                 // ****************
                 byte[] Year = Encoding.BigEndianUnicode.GetBytes(year.ToString());
                 string playersDisplay = players == 1 ? players.ToString() : "1-" + players.ToString();
+                bool yearReplaced = false;
+                bool playersReplaced = false;
 
-                var Players_JP = players >= 1 ? new byte[] { 0x31, 0x4E, 0xBA, 0x00, 0x00, 0x00, 0x00 } : new byte[] { 0x31, 0xFF, 0x5E, 0x00, Encoding.BigEndianUnicode.GetBytes(players.ToString())[1], 0x4E, 0xBA };
+                byte playerDigit = (byte)('0' + players);
+                var Players_JP = players == 1 ? new byte[] { 0x31, 0x4E, 0xBA, 0x00, 0x00, 0x00, 0x00 } : new byte[] { 0x31, 0xFF, 0x5E, 0x00, playerDigit, 0x4E, 0xBA };
 
-                var Players_KO = players >= 1 ? new byte[] { 0x31, 0xBA, 0x85, 0x00, 0x00, 0x00, 0x00 } : new byte[] { 0x31, 0x00, 0x2D, 0x00, Encoding.BigEndianUnicode.GetBytes(players.ToString())[1], 0xBA, 0x85 };
+                var Players_KO = players == 1 ? new byte[] { 0x31, 0xBA, 0x85, 0x00, 0x00, 0x00, 0x00 } : new byte[] { 0x31, 0x00, 0x2D, 0x00, playerDigit, 0xBA, 0x85 };
 
                 for (int i = 0; i < BRLYT.Length - 13; i++)
                 {
@@ -148,7 +154,10 @@ namespace FriishProduce
                         BRLYT[i + 8] == 0xB1
                      && BRLYT[i + 9] == 0x44
                      && BRLYT[i + 10] == 0x00)
+                    {
                         Year.CopyTo(BRLYT, i);
+                        yearReplaced = true;
+                    }
 
                     else if (BRLYT[i] == 0x00
                      && BRLYT[i + 1] == 0x56
@@ -158,7 +167,10 @@ namespace FriishProduce
                      && BRLYT[i + 5] == 0x56
                      && BRLYT[i + 6] == 0x00
                      && BRLYT[i + 7] == 0x43)
+                    {
                         Year.CopyTo(BRLYT, i);
+                        yearReplaced = true;
+                    }
 
                     // Players: Japanese
                     // -----
@@ -170,7 +182,10 @@ namespace FriishProduce
                      && BRLYT[i + 4] == 0x34
                      && BRLYT[i + 5] == 0x4E
                      && BRLYT[i + 6] == 0xBA)
+                    {
                         Players_JP.CopyTo(BRLYT, i);
+                        playersReplaced = true;
+                    }
 
                     // Players: Korean
                     // -----
@@ -181,7 +196,10 @@ namespace FriishProduce
                      && BRLYT[i + 3] == 0x00
                      && BRLYT[i + 5] == 0xBA
                      && BRLYT[i + 6] == 0x85)
+                    {
                         Players_KO.CopyTo(BRLYT, i);
+                        playersReplaced = true;
+                    }
                 }
 
                 // Players: Other languages
@@ -196,20 +214,71 @@ namespace FriishProduce
                     { "T_Play_NED", Encoding.BigEndianUnicode.GetBytes($"{playersDisplay} speler(s)") }
                 };
 
-                List<int> lengths = new();
-
                 foreach (var line in Players)
                 {
-                    int index = Byte.IndexOf(BRLYT, line.Key, 5100, 6900);
-                    if (index != -1)
+                    string original = line.Key switch
                     {
-                        int length = line.Key.ToUpper().EndsWith("NED") ? Encoding.BigEndianUnicode.GetBytes("1-2 speler(s)").Length : Byte.IndexOf(BRLYT, "txt1", index + 104) - (index + 104) - 2;
-                        byte[] target = new byte[length];
+                        "T_Play_ENG" => "Players: 1-4",
+                        "T_Play_GER" => "1-4 Spieler",
+                        "T_Play_FRA" => "Joueurs: 1-4",
+                        "T_Play_ITA" => "Giocatori: 1-4",
+                        "T_Play_SPA" => "Jugadores: 1-4",
+                        "T_Play_NED" => "1-4 speler(s)",
+                        _ => null
+                    };
 
-                        line.Value.CopyTo(target, 0);
-                        target.CopyTo(BRLYT, index + 104); 
+                    if (original != null)
+                        playersReplaced |= ReplaceText(BRLYT, original, Encoding.BigEndianUnicode.GetString(line.Value));
+                }
+
+                // Some banner versions do not contain the language node names above.
+                // Their visible text is still stored as UTF-16BE in the BRLYT file.
+                if (!yearReplaced)
+                {
+                    foreach (string marker in new[] { "VC.VC", "VCVC" })
+                        if (ReplaceText(BRLYT, marker, year.ToString()))
+                        {
+                            yearReplaced = true;
+                            break;
+                        }
+                }
+
+                if (!playersReplaced)
+                {
+                    string playerText = players == 1 ? "1" : $"1-{players}";
+
+                    if (region == Region.Japan)
+                    {
+                        playersReplaced = ReplaceText(BRLYT, "1～4人", players == 1 ? "1人" : $"1～{players}人")
+                                      || ReplaceText(BRLYT, "1-4人", players == 1 ? "1人" : $"1-{players}人");
+                    }
+                    else if (region == Region.Korea)
+                    {
+                        playersReplaced = ReplaceText(BRLYT, "1-4명", players == 1 ? "1명" : $"1-{players}명");
+                    }
+
+                    if (!playersReplaced)
+                    {
+                        string[][] playerLabels =
+                        {
+                            new[] { "Players: 1", $"Players: {playerText}" },
+                            new[] { "1 Spieler", $"{playerText} Spieler" },
+                            new[] { "Joueurs: 1", $"Joueurs: {playerText}" },
+                            new[] { "Giocatori: 1", $"Giocatori: {playerText}" },
+                            new[] { "Jugadores: 1", $"Jugadores: {playerText}" },
+                            new[] { "1 speler(s)", $"{playerText} speler(s)" }
+                        };
+
+                        foreach (string[] label in playerLabels)
+                            if (ReplaceText(BRLYT, label[0], label[1]))
+                                playersReplaced = true;
                     }
                 }
+
+                if (!yearReplaced)
+                    Logger.Log("WARNING: Could not locate the release year field in the banner layout.");
+                if (!playersReplaced)
+                    Logger.Log("WARNING: Could not locate the player count field in the banner layout.");
 
                 // Replace
                 // ****************
@@ -219,6 +288,35 @@ namespace FriishProduce
             }
 
             Banner.Dispose();
+        }
+
+        private static bool ReplaceText(byte[] data, string original, string replacement)
+        {
+            byte[] originalBytes = Encoding.BigEndianUnicode.GetBytes(original);
+            int index = Byte.IndexOf(data, originalBytes);
+            if (index < 0) return false;
+
+            byte[] replacementBytes = Encoding.BigEndianUnicode.GetBytes(replacement);
+            int terminator = Byte.IndexOf(data, new byte[] { 0x00, 0x00 }, index + originalBytes.Length);
+            int capacity = terminator > index ? terminator - index : originalBytes.Length;
+            if (replacementBytes.Length > capacity) return false;
+
+            Array.Clear(data, index, capacity);
+            replacementBytes.CopyTo(data, index);
+            return true;
+        }
+
+        private static void UseInternationalLanguageGroup(byte[] data)
+        {
+            byte[] groupSection = Encoding.ASCII.GetBytes("grp1");
+            byte[] japaneseGroup = Encoding.ASCII.GetBytes("LJPN\0");
+            int sectionIndex = Byte.IndexOf(data, groupSection);
+            if (sectionIndex < 0) return;
+
+            int groupIndex = Byte.IndexOf(data, japaneseGroup, sectionIndex + groupSection.Length);
+            if (groupIndex < 0) return;
+
+            Encoding.ASCII.GetBytes("LENG\0").CopyTo(data, groupIndex);
         }
 
         #region *** Using VCBrlyt ***
@@ -354,7 +452,7 @@ namespace FriishProduce
             catch (Exception ex)
             {
                 if (Program.DebugMode || !Program.GUI)
-                    throw ex;
+                    throw;
                 else
                     MessageBox.Error(ex.Message);
                 return;
@@ -480,7 +578,7 @@ namespace FriishProduce
             catch (Exception ex)
             {
                 if (Program.DebugMode || !Program.GUI)
-                    throw ex;
+                    throw;
                 else
                     MessageBox.Error(ex.Message);
                 return;
